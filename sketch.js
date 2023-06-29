@@ -1,5 +1,5 @@
 let caminante1, caminante2, caminante3;
-let trazo = 6; // Grosor de las líneas
+let trazo = 15; // Grosor de las líneas
 let capa1, capa2, capa3;
 let centroX, centroY; // Posición del centro de la pantalla
 let analyser;
