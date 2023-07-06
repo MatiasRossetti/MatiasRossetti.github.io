@@ -52,7 +52,7 @@ function setup() {
     caminantePos.x,
     caminantePos.y,
     capa2,
-    color(209, 212, 70, 5)
+    color(120, 168, 162, 5)
   );
 
   esquinas.splice(caminanteIndex, 1); // Eliminar la esquina ya utilizada
@@ -64,11 +64,11 @@ function setup() {
     caminantePos.x,
     caminantePos.y,
     capa3,
-    color(120, 168, 162, 5)
+    color(209, 212, 70, 4)
   );
 
   // Ajustar la tensión de las curvas
-  curveTightness(-6);
+  curveTightness(-3);
 
   // Iniciar la captura de audio
   iniciarCapturaAudio();
@@ -81,28 +81,12 @@ function setup() {
 }
 
 function draw() {
-  // Actualizar las capas
-  capa1.clear();
-  capa2.clear();
-  capa3.clear();
-
-  // Dibujar caminantes en las capas
-  caminante1.dibujar();
-  caminante2.dibujar();
-  caminante3.dibujar();
-
-  // Mostrar las capas en el lienzo principal
-  image(capa3, 0, 0);
-  image(capa2, 0, 0);
-  image(capa1, 0, 0);
-
-  // Obtener el nivel de volumen del audio
-  let nivelGraves = obtenerNivelGraves();
+  // Actualizar caminantes según el nivel de volumen de graves y agudos
+let nivelGraves = obtenerNivelGraves();
   let nivelAgudos = obtenerNivelAgudos();
 
-  // Actualizar caminantes según el nivel de volumen de graves y agudos
-  let umbralMinimo = 0.01;
-  if (nivelGraves > umbralMinimo) {
+  let umbralMinimo = 0.18;
+  if (nivelGraves> umbralMinimo && nivelAgudos <umbralMinimo ) {
     caminante2.actualizar(nivelGraves);
     caminante3.actualizar(nivelGraves);
   }
@@ -110,18 +94,48 @@ function draw() {
     caminante1.actualizar(nivelAgudos);
   }
 
+  // Dibujar capas
+  capa1.clear();
+  capa1.blendMode(BLEND); // Restaurar el modo de mezcla predeterminado
+  capa1.stroke(20, 38, 32);
+  capa1.strokeWeight(trazo);
+  capa1.noFill();
+  caminante1.dibujar(capa1);
+
+  capa2.clear();
+  capa2.blendMode(BLEND);
+  capa2.stroke(120, 168, 162);
+  capa2.strokeWeight(trazo);
+  capa2.noFill();
+  caminante2.dibujar(capa2);
+
+  capa3.clear();
+  capa3.blendMode(BLEND);
+  capa3.stroke(209, 212, 70);
+  capa3.strokeWeight(trazo);
+  capa3.noFill();
+  caminante3.dibujar(capa3);
+
+  // Dibujar capas en el lienzo principal
+  image(capa3, 0, 0);
+  image(capa2, 0, 0);
+  image(capa1, 0, 0);
+
   // Reiniciar el programa si no se ha recibido audio en 5 segundos
   if (reinicioTimer && nivelGraves === 0 && nivelAgudos === 0) {
     clearTimeout(reinicioTimer);
     reiniciarProgramaTimer();
   }
+
+  // Continuar la animación
+  requestAnimationFrame(draw);
 }
 
 function reiniciarProgramaTimer() {
   reinicioTimer = setTimeout(function() {
     console.log("No se ha recibido audio en 5 segundos. Reiniciando el programa...");
     setup();
-  }, 30000);
+  }, 25000);
 }
 
 function reiniciarPrograma(event) {
@@ -137,7 +151,7 @@ class Caminante {
     this.y = y;
     this.direccion = random(TWO_PI);
     this.nuevaDireccion = this.direccion;
-    this.velocidad = 50; // Aumentar la velocidad
+    this.velocidad = 25; // Aumentar la velocidad
     this.historia = [];
     this.capa = capa;
     this.trazo = trazo; // Grosor del trazo
@@ -145,9 +159,6 @@ class Caminante {
   }
 
   dibujar() {
-    this.capa.noFill();
-    this.capa.stroke(this.color);
-    this.capa.strokeWeight(this.trazo);
     this.capa.beginShape();
     for (let i = 0; i < this.historia.length; i++) {
       let punto = this.historia[i];
@@ -207,12 +218,12 @@ class Caminante {
     }
 
     // Agregar punto a la historia
-    this.historia.push({ x: this.x, y: this.y });
-
-    // Limitar la longitud de la historia
-    let maxHistoria = 500;
-    if (this.historia.length > maxHistoria) {
-      this.historia.splice(0, 1);
+    if (
+      this.historia.length === 0 ||
+      this.x !== this.historia[this.historia.length - 1].x ||
+      this.y !== this.historia[this.historia.length - 1].y
+    ) {
+      this.historia.push({ x: this.x, y: this.y });
     }
   }
 }
@@ -227,76 +238,68 @@ function iniciarCapturaAudio() {
     // Solicitar permiso para acceder al micrófono
     navigator.mediaDevices
       .getUserMedia(constraints)
-      .then(function (stream) {
+      .then(function(stream) {
         // Crear un nuevo objeto AudioContext
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-        // Crear un nuevo objeto AnalyserNode
+        // Crear un nodo Analyser para obtener datos del audio
         analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
 
-        // Conectar el AnalyserNode con el stream de audio
+        // Conectar el nodo Analyser al flujo de audio
         const source = audioContext.createMediaStreamSource(stream);
         source.connect(analyser);
 
-        // Configurar parámetros del AnalyserNode
-        analyser.fftSize = 2048;
+        // Iniciar la animación
+        requestAnimationFrame(draw);
       })
-      .catch(function (err) {
-        console.error('Error al acceder al micrófono: ', err);
+      .catch(function(error) {
+        console.error('Error al acceder al micrófono:', error);
       });
   } else {
-    console.error('getUserMedia no es compatible con este navegador.');
+    console.error('El navegador no es compatible con getUserMedia');
   }
 }
 
-// Función para obtener el nivel de volumen de graves del audio
+// Función para obtener el nivel de volumen de los graves
 function obtenerNivelGraves() {
-  // Verificar si el AnalyserNode está definido
-  if (analyser) {
-    // Obtener datos de amplitud de la forma de onda
-    const bufferLength = analyser.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
-    analyser.getByteFrequencyData(dataArray);
+  const bufferLength = analyser.frequencyBinCount;
+  const dataArray = new Uint8Array(bufferLength);
+  analyser.getByteFrequencyData(dataArray);
 
-    // Calcular el promedio de los valores de amplitud de los graves
-    const inicioGraves = 0; // Índice inicial de los graves
-    const finGraves = Math.floor(bufferLength * 0.25); // Índice final de los graves
-    let sumaAmplitud = 0;
-    for (let i = inicioGraves; i < finGraves; i++) {
-      sumaAmplitud += dataArray[i];
-    }
-    const promedioAmplitud = sumaAmplitud / (finGraves - inicioGraves);
+  const inicio = 0;
+  const fin = Math.floor(bufferLength * 0.2); // Rango de frecuencias graves
 
-    // Mapear el promedio de amplitud al rango [0, 1]
-    const nivelVolumen = map(promedioAmplitud, 0, 255, 0, 1);
-    return nivelVolumen;
-  } else {
-    return 0;
+  let suma = 0;
+  for (let i = inicio; i < fin; i++) {
+    suma += dataArray[i];
   }
+
+  const promedio = suma / (fin - inicio);
+  const nivel = promedio / 255; // Normalizar el nivel entre 0 y 1
+
+  return nivel;
 }
 
-// Función para obtener el nivel de volumen de agudos del audio
+// Función para obtener el nivel de volumen de los agudos
 function obtenerNivelAgudos() {
-  // Verificar si el AnalyserNode está definido
-  if (analyser) {
-    // Obtener datos de amplitud de la forma de onda
-    const bufferLength = analyser.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
-    analyser.getByteFrequencyData(dataArray);
+  const bufferLength = analyser.frequencyBinCount;
+  const dataArray = new Uint8Array(bufferLength);
+  analyser.getByteFrequencyData(dataArray);
 
-    // Calcular el promedio de los valores de amplitud de los agudos
-    const inicioAgudos = Math.floor(bufferLength * 0.75); // Índice inicial de los agudos
-    const finAgudos = bufferLength; // Índice final de los agudos
-    let sumaAmplitud = 0;
-    for (let i = inicioAgudos; i < finAgudos; i++) {
-      sumaAmplitud += dataArray[i];
-    }
-    const promedioAmplitud = sumaAmplitud / (finAgudos - inicioAgudos);
+  const inicio = Math.floor(bufferLength * 0.7); // Rango de frecuencias agudas
+  const fin = bufferLength;
 
-    // Mapear el promedio de amplitud al rango [0, 1]
-    const nivelVolumen = map(promedioAmplitud, 0, 255, 0, 1);
-    return nivelVolumen;
-  } else {
-    return 0;
+  let suma = 0;
+  for (let i = inicio; i < fin; i++) {
+    suma += dataArray[i];
   }
+
+  const promedio = suma / (fin - inicio);
+  const nivel = promedio / 255; // Normalizar el nivel entre 0 y 1
+
+  return nivel;
 }
+
+// Iniciar el programa
+setup();
