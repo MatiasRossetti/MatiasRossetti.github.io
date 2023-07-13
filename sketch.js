@@ -3,7 +3,7 @@ let trazo = 6; // Grosor de las líneas
 let capa1, capa2, capa3;
 let centroX, centroY; // Posición del centro de la pantalla
 let analyser;
-let reinicioTimer; // Temporizador para reiniciar el programa
+let contador;
 
 // Función para interpolar ángulos
 function lerpAngle(start, end, amount) {
@@ -73,25 +73,30 @@ function setup() {
   // Iniciar la captura de audio
   iniciarCapturaAudio();
 
-  // Asignar función de reinicio al presionar la tecla "R"
-  window.addEventListener('keypress', reiniciarPrograma);
-
-  // Iniciar el temporizador de reinicio
-  reiniciarProgramaTimer();
+  // Iniciar el contador a 0
+  contador = 0;
 }
 
 function draw() {
   // Actualizar caminantes según el nivel de volumen de graves y agudos
-let nivelGraves = obtenerNivelGraves();
+  let nivelGraves = obtenerNivelGraves();
   let nivelAgudos = obtenerNivelAgudos();
 
+  let movioCaminantes = false; // Bandera para verificar si los caminantes se mueven
+
   let umbralMinimo = 0.18;
-  if (nivelGraves> umbralMinimo && nivelAgudos <umbralMinimo ) {
+  if (nivelGraves > umbralMinimo && nivelAgudos < umbralMinimo) {
     caminante2.actualizar(nivelGraves);
     caminante3.actualizar(nivelGraves);
+    movioCaminantes = true;
   }
   if (nivelAgudos > umbralMinimo) {
     caminante1.actualizar(nivelAgudos);
+    movioCaminantes = true;
+  }
+
+  if (movioCaminantes) {
+    contador++; // Incrementar el contador si los caminantes se mueven
   }
 
   // Dibujar capas
@@ -121,28 +126,19 @@ let nivelGraves = obtenerNivelGraves();
   image(capa2, 0, 0);
   image(capa1, 0, 0);
 
-  // Reiniciar el programa si no se ha recibido audio en 5 segundos
-  if (reinicioTimer && nivelGraves === 0 && nivelAgudos === 0) {
-    clearTimeout(reinicioTimer);
-    reiniciarProgramaTimer();
+  // // Mostrar el valor del contador en la pantalla
+  // fill(0);
+  // textSize(20);
+  // textAlign(LEFT, TOP);
+  // text("Contador: " + contador, 10, 10);
+
+  // Reiniciar el programa si el contador alcanza los 15 segundos
+  if (contador >= 25 * 60) {
+    setup();
   }
 
   // Continuar la animación
   requestAnimationFrame(draw);
-}
-
-function reiniciarProgramaTimer() {
-  reinicioTimer = setTimeout(function() {
-    console.log("No se ha recibido audio en 5 segundos. Reiniciando el programa...");
-    setup();
-  }, 25000);
-}
-
-function reiniciarPrograma(event) {
-  if (event.key === 'r' || event.key === 'R') {
-    clearTimeout(reinicioTimer);
-    reiniciarProgramaTimer();
-  }
 }
 
 class Caminante {
@@ -238,7 +234,7 @@ function iniciarCapturaAudio() {
     // Solicitar permiso para acceder al micrófono
     navigator.mediaDevices
       .getUserMedia(constraints)
-      .then(function(stream) {
+      .then(function (stream) {
         // Crear un nuevo objeto AudioContext
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -253,7 +249,7 @@ function iniciarCapturaAudio() {
         // Iniciar la animación
         requestAnimationFrame(draw);
       })
-      .catch(function(error) {
+      .catch(function (error) {
         console.error('Error al acceder al micrófono:', error);
       });
   } else {
