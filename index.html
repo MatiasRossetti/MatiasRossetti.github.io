@@ -1,18 +1,32 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<html lang="en" dir="ltr">
+    <head>
+        <meta charset="utf-8">
+        <title>TestVideoInteractivo</title>
 
-    <title>Sketch</title>
-
-    <link rel="stylesheet" type="text/css" href="style.css">
-
-    <script src="libraries/p5.min.js"></script>
-    <script src="libraries/p5.sound.min.js"></script>
-  </head>
-
-  <body>
-    <script src="sketch.js"></script>
-  </body>
+        <style>
+            /* body {
+                margin: 0px;
+                padding: 0px;
+            } */
+            canvas {
+                display: block;
+            }
+        </style>
+        <link href="https://cdn.plyr.io/3.5.6/plyr.css" rel="stylesheet">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/plyr/3.5.6/plyr.min.js"></script>
+        <link rel="stylesheet" href="estiloAudio.css">
+        <link rel="stylesheet" href="estiloSecuencias.css">
+    </head>
+    <body>
+        <div id="mainwrap">
+            <div id="audiowrap">
+               <div id="audio0">
+                   <audio controls id="audiop">
+                   </audio>
+               </div>
+           </div>
+       </div>
+       <script type="module" src="script.js"></script>
+    </body>
 </html>
